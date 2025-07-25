@@ -548,10 +548,19 @@ reloadButton.addEventListener('click', () => {
 });
 
 
-// --- Game Initialization ---
+// ... (rest of your code) ...
+
 function initializeGame() {
     const todayKey = getTodayKey();
-    console.log("Today's Key:", todayKey); // For debugging purposes
+    console.log("Today's Key:", todayKey); // Keep this
+
+    // Log initial global game state variables
+    console.log("Initial state (before loading cookie):", {
+        currentClueIndex,
+        guessesRemaining,
+        correctGuessMade,
+        eventAnswered
+    }); // <<< ADD THIS LINE
 
     currentEvent = historicalEvents[todayKey];
 
@@ -567,19 +576,29 @@ function initializeGame() {
     }
 
     // Load game state from cookie for the specific date
-    loadGameState(todayKey);
+    loadGameState(todayKey); // This line will modify the global variables
+
+    // Log the state *after* loadGameState has run
+    console.log("Game state after loadGameState:", {
+        currentClueIndex,
+        guessesRemaining,
+        correctGuessMade,
+        eventAnswered
+    }); // Keep this
 
     // Initial display based on loaded state
     displayClue();
     updateGuessesDisplay();
-    updateGameControls(); // Sets correct button states based on loaded state
-    updateAnswerAreaVisibility(); // Hides/shows answer based on loaded state
+    updateGameControls(); // This is the function that disables the input
+    updateAnswerAreaVisibility();
 
     // If the game was already completed for today, just show the answer
     if (correctGuessMade || eventAnswered || guessesRemaining <= 0) {
         endGame();
     }
 }
+
+// ... (rest of your code) ...
 
 
 // --- Event Listeners ---
