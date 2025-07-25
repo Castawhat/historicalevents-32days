@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today in History - Daily History Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Playfair+Display:wght%40700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Today in History</h1>
+        <p class="date-display" id="currentDate">Loading Date...</p>
+
+        <div id="gameArea">
+            <div id="cluesContainer">
+                <p class="clue-initial">Welcome to Today in History! Get ready to guess today's historical event.</p>
+                </div>
+
+            <p class="guesses-left" id="guessesLeft">Guesses Remaining: 5</p>
+
+            <input type="text" id="guessInput" placeholder="Your guess here..." disabled>
+            <button id="submitGuess" disabled>Submit Guess</button>
+
+            <div id="feedback" class="feedback"></div>
+
+            <div id="shareSection" class="hidden">
+                <h2>Game Over!</h2>
+                <p id="eventReveal"></p>
+                <p id="shareMessage"></p>
+                <button id="copyShare" class="share-button">Copy Share Message</button>
+            </div>
+        </div>
+
+        <div id="loadingScreen" class="loading-screen">
+            <div class="spinner"></div>
+            <p>Loading today's history...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
