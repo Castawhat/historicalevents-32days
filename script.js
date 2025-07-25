@@ -1,3 +1,10 @@
+// Function to get today's date in 'YYYY-MM-DD' format
+function getTodayKey() {
+    const today = new Date();
+    // Use toISOString and slice to get YYYY-MM-DD
+    return today.toISOString().slice(0, 10);
+}
+
 // --- Game Data (Daily Event) ---
 // In a real application, this would come from a server API based on the date.
 // For this example, we'll simulate a daily event.
@@ -378,3 +385,211 @@ const historicalEvents = {
         summary: "On August 27, 1859, Edwin Drake successfully drilled the first commercial oil well in the United States near Titusville, Pennsylvania, marking the birth of the modern American oil industry."
     }
 };
+
+// --- DOM Element References ---
+const currentClueDisplay = document.getElementById('current-clue');
+const guessInput = document.getElementById('guess-input');
+const submitGuessBtn = document.getElementById('submit-guess-btn');
+const guessesRemainingDisplay = document.getElementById('guesses-remaining');
+const messageDisplay = document.getElementById('message-display');
+const giveUpBtn = document.getElementById('give-up-btn');
+const answerArea = document.getElementById('answer-area');
+const eventTitleDisplay = document.getElementById('event-title');
+const eventSummaryDisplay = document.getElementById('event-summary');
+const reloadButton = document.getElementById('reload-button'); // New reload button
+
+// --- Game State Variables for the current day ---
+let currentEvent = null;
+let currentClueIndex = 0;
+let guessesRemaining = 5;
+let correctGuessMade = false;
+let eventAnswered = false; // New state to track if the daily event has been answered
+
+// --- Cookie Handling Functions ---
+function saveGameState(dateKey) {
+    const gameState = {
+        clueIndex: currentClueIndex,
+        guesses: guessesRemaining,
+        correct: correctGuessMade,
+        answered: eventAnswered // Save the new state
+    };
+    // Store state for the specific date
+    document.cookie = `historyGuessGame_${dateKey}=${JSON.stringify(gameState)}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
+}
+
+function loadGameState(dateKey) {
+    const name = `historyGuessGame_${dateKey}=`;
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+            const savedState = JSON.parse(c.substring(name.length, c.length));
+            currentClueIndex = savedState.clueIndex;
+            guessesRemaining = savedState.guesses;
+            correctGuessMade = savedState.correct;
+            eventAnswered = savedState.answered; // Load the new state
+            return true;
+        }
+    }
+    return false; // No saved state for today
+}
+
+// --- Game Logic Functions ---
+
+function displayClue() {
+    if (currentEvent && currentClueIndex < currentEvent.clues.length) {
+        currentClueDisplay.textContent = currentEvent.clues[currentClueIndex];
+    } else if (currentEvent) {
+        // If all clues are exhausted but not guessed
+        currentClueDisplay.textContent = "You've seen all the clues! What's your final guess?";
+    } else {
+        currentClueDisplay.textContent = "Loading today's history...";
+    }
+}
+
+function updateGuessesDisplay() {
+    guessesRemainingDisplay.textContent = `Guesses remaining: ${guessesRemaining}`;
+}
+
+function updateGameControls() {
+    if (correctGuessMade || eventAnswered || guessesRemaining <= 0) {
+        guessInput.disabled = true;
+        submitGuessBtn.disabled = true;
+        giveUpBtn.disabled = true;
+        reloadButton.style.display = 'block'; // Show reload button when game ends for the day
+    } else {
+        guessInput.disabled = false;
+        submitGuessBtn.disabled = false;
+        giveUpBtn.disabled = false;
+        reloadButton.style.display = 'none'; // Hide reload button normally
+    }
+}
+
+function updateAnswerAreaVisibility() {
+    if (correctGuessMade || eventAnswered || guessesRemaining <= 0) {
+        answerArea.style.display = 'block';
+    } else {
+        answerArea.style.display = 'none';
+    }
+}
+
+function handleGuess() {
+    const guess = guessInput.value.trim().toLowerCase();
+    guessInput.value = ''; // Clear input
+
+    if (guess === "") {
+        messageDisplay.textContent = "Please enter a guess.";
+        return;
+    }
+
+    guessesRemaining--;
+    updateGuessesDisplay();
+
+    if (checkGuess(guess)) {
+        correctGuessMade = true;
+        eventAnswered = true; // Mark as answered
+        messageDisplay.textContent = "Correct! You guessed it!";
+        endGame();
+    } else {
+        if (guessesRemaining > 0) {
+            messageDisplay.textContent = "Incorrect guess. Try again!";
+            currentClueIndex++; // Reveal next clue
+            displayClue();
+        } else {
+            messageDisplay.textContent = "No guesses left!";
+            endGame();
+        }
+    }
+    saveGameState(getTodayKey()); // Save state after each guess
+    updateGameControls();
+}
+
+function checkGuess(guess) {
+    if (!currentEvent || !currentEvent.answerKeywords) {
+        return false;
+    }
+    return currentEvent.answerKeywords.includes(guess);
+}
+
+function endGame() {
+    if (currentEvent) {
+        eventTitleDisplay.textContent = currentEvent.event;
+        eventSummaryDisplay.textContent = currentEvent.summary;
+    } else {
+        eventTitleDisplay.textContent = "Event Not Found";
+        eventSummaryDisplay.textContent = "No event data available for today.";
+    }
+    updateAnswerAreaVisibility();
+    updateGameControls();
+    eventAnswered = true; // Ensure event is marked as answered if game ends this way
+    saveGameState(getTodayKey()); // Save final state
+}
+
+function giveUp() {
+    guessesRemaining = 0; // Set guesses to 0 to trigger end game
+    messageDisplay.textContent = "You gave up!";
+    endGame();
+    saveGameState(getTodayKey()); // Save state
+    updateGameControls();
+}
+
+// Function to handle reloading the page (for next day testing)
+// In a production environment, this would naturally happen with time.
+reloadButton.addEventListener('click', () => {
+    // For testing: clear cookie to simulate new day, then reload
+    // In actual use, you wouldn't clear the cookie like this.
+    // The game would automatically update on a new day.
+    // document.cookie = `historyGuessGame_${getTodayKey()}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    location.reload();
+});
+
+
+// --- Game Initialization ---
+function initializeGame() {
+    const todayKey = getTodayKey();
+    console.log("Today's Key:", todayKey); // For debugging purposes
+
+    currentEvent = historicalEvents[todayKey];
+
+    if (!currentEvent) {
+        console.error("No event found for today's date:", todayKey);
+        currentClueDisplay.textContent = "No history event available for today. Please check the date or data source.";
+        guessInput.disabled = true;
+        submitGuessBtn.disabled = true;
+        giveUpBtn.disabled = true;
+        eventTitleDisplay.textContent = "N/A";
+        eventSummaryDisplay.textContent = "Please check back tomorrow or verify the data.";
+        return;
+    }
+
+    // Load game state from cookie for the specific date
+    loadGameState(todayKey);
+
+    // Initial display based on loaded state
+    displayClue();
+    updateGuessesDisplay();
+    updateGameControls(); // Sets correct button states based on loaded state
+    updateAnswerAreaVisibility(); // Hides/shows answer based on loaded state
+
+    // If the game was already completed for today, just show the answer
+    if (correctGuessMade || eventAnswered || guessesRemaining <= 0) {
+        endGame();
+    }
+}
+
+
+// --- Event Listeners ---
+submitGuessBtn.addEventListener('click', handleGuess);
+guessInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+        handleGuess();
+    }
+});
+giveUpBtn.addEventListener('click', giveUp);
+
+// Initialize the game when the page loads
+document.addEventListener('DOMContentLoaded', initializeGame);
